@@ -1,0 +1,17 @@
+Plug-in error log for plug-in at: E:\worked\lightroom plugin\rc_TreeSyncPublisher_(lrplugin)_11.0 - DEV\TreeSyncPublisher.lrplugin
+
+**** Error 1
+
+An error occurred while attempting to run one of the plug-in’s scripts.
+Table is excessively nested.
+
+**** Error 2
+
+An error occurred while attempting to run one of the plug-in’s scripts.
+TreeSyncManager.lua:6: attempt to index global 'Manager' (a nil value)
+
+**** Error 3
+
+An error occurred while attempting to start the plugin.
+Table is excessively nested.
+
