@@ -4,6 +4,7 @@
 
 
 local TreeSyncPublish, dbg, dbgf = FtpPublish:newClass{ className = 'TreeSyncPublish' }
+local LrPrefs = import 'LrPrefs'
 
 --[[
         To extend special publish class, which as far as I can see,
@@ -2932,7 +2933,10 @@ function TreeSyncPublish:checkBeforeRendering()
             if self.exportParams.LR_format == 'ORIGINAL' then
                 if self.rawMeta[_photo].isVirtualCopy then
                     -- could have a stat for this, but it seems hardly worth the effort.
-                    app:log( "Virtual copy being excluded from original format export." )
+                    do
+                    local collName = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
+                    app:logW( "SKIP_VC_IN_ORIGINAL_MODE: ^1 | collection=^2", photoPath, collName )
+                end
                     self.exportSession:removePhoto( _photo )
                     removed = true
                 end
@@ -2942,9 +2946,22 @@ function TreeSyncPublish:checkBeforeRendering()
             if not sourceFileMissing then
                 -- app:logV( "Source file exists." )
             elseif smartPreviewQual then
-                app:logV( "Source file is missing, but smart-preview exists - photo will be subject to exporting, as far as TSP is concerned." )
-            else
-                app:logW( "Source file does not exist, nor smart preview (^1) - photo or video will not be exported.", photoPath )
+                local missingPolicy = fprops:getPropertyForPlugin( _PLUGIN, 'missingOriginals' ) or (LrPrefs and LrPrefs.prefsForPlugin().missingOriginals) or 'Prompt'
+                if missingPolicy == 'All' then
+                    local collName = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
+                    local folderPath = LrPathUtils.parent( photoPath )
+                    app:logW("SKIP_SMART_PREVIEW: ^1 | folder=^2 | collection=^3", photoPath, folderPath or 'N/A', collName)
+                    self.exportSession:removePhoto( _photo )
+                    removed = true
+                else
+                    app:logV("Source file is missing, but smart preview is present — exporting using Smart Preview.")
+                end
+else
+                do
+                local collName = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
+                local folderPath = LrPathUtils.parent( photoPath )
+                app:logW("SKIP_MISSING_ORIGINAL: ^1 | folder=^2 | collection=^3", photoPath, folderPath or 'N/A', collName)
+            end
                 self.exportSession:removePhoto( _photo )
                 removed = true
             end

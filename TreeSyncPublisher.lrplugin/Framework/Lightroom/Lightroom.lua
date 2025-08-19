@@ -552,14 +552,29 @@ function Lightroom:computeActivePresetDir()
 
         local prefsContent = LrFileUtils.readFile(prefsFile)
         if prefsContent and prefsContent:find("storePresetsWithCatalog = true") then
-            -- prefs.manualOverridePath = LrPathUtils.child(catalog:getPath(), "Lightroom Settings")
-            -- return LrPathUtils.child(catalog:getPath(), "Lightroom Settings")
-            prefs.manualOverridePath = LrPathUtils.parent(catalog:getPath())
+            local catFolder = LrPathUtils.parent(catalog:getPath())
+            local lrSets = LrPathUtils.child(catFolder, "Lightroom Settings")
+            local sets2 = LrPathUtils.child(catFolder, "Settings")
+            if LrFileUtils.exists(lrSets) == "directory" then
+                prefs.manualOverridePath = lrSets
+            elseif LrFileUtils.exists(sets2) == "directory" then
+                prefs.manualOverridePath = sets2
+            else
+                prefs.manualOverridePath = catFolder
+            end
             return prefs.manualOverridePath
         else
-            -- prefs.manualOverridePath = LrPathUtils.child(LrPathUtils.getStandardFilePath('appData'), 'Roaming/Adobe/Lightroom')
-            -- return LrPathUtils.child(LrPathUtils.getStandardFilePath('appData'), 'Roaming/Adobe/Lightroom')
-            prefs.manualOverridePath = LrPathUtils.getStandardFilePath('appData')
+            local appData = LrPathUtils.getStandardFilePath('appData')
+            local adobe = LrPathUtils.child(appData, "Adobe")
+            local lr1 = LrPathUtils.child(adobe, "Lightroom")
+            local lr2 = LrPathUtils.child(adobe, "Lightroom Classic")
+            if LrFileUtils.exists(lr1) == "directory" then
+                prefs.manualOverridePath = lr1
+            elseif LrFileUtils.exists(lr2) == "directory" then
+                prefs.manualOverridePath = lr2
+            else
+                prefs.manualOverridePath = appData
+            end
             return prefs.manualOverridePath
         end
     end
