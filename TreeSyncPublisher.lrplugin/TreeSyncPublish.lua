@@ -2487,6 +2487,7 @@ end
         the rendering process (preserving nothing from the base export class).
 --]]        
 function TreeSyncPublish:processRenderedPhotosMethod()
+    if self._approvedButNotRendered then self._approvedButNotRendered[rendition.photo] = nil end
 
     assert( self.exportParams ~= nil, "no export params" )
     local exportSettings = self.exportParams -- convenience var.
@@ -2910,7 +2911,10 @@ function TreeSyncPublish:checkBeforeRendering()
             app:logV( "Using default getRemoteUrl function - consider configuring using advanced settings - preset manager section of plugin manager." )
         end
         for i, _photo in ipairs( self.photosToExport ) do
-            local removed = false
+            
+            self._scanIdxByPhoto = self._scanIdxByPhoto or {}
+            self._scanIdxByPhoto[_photo] = i
+local removed = false
             local photoPath = self.rawMeta[_photo].path
             local photoName = cat:getPhotoNameDisp( _photo, true, self.cache )
             app:log( "Considering export of ^1", photoName )
@@ -2933,10 +2937,7 @@ function TreeSyncPublish:checkBeforeRendering()
             if self.exportParams.LR_format == 'ORIGINAL' then
                 if self.rawMeta[_photo].isVirtualCopy then
                     -- could have a stat for this, but it seems hardly worth the effort.
-                    do
-                    local collName = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
-                    app:logW( "SKIP_VC_IN_ORIGINAL_MODE: ^1 | collection=^2", photoPath, collName )
-                end
+                    app:log( "Virtual copy being excluded from original format export." )
                     self.exportSession:removePhoto( _photo )
                     removed = true
                 end
@@ -2946,24 +2947,33 @@ function TreeSyncPublish:checkBeforeRendering()
             if not sourceFileMissing then
                 -- app:logV( "Source file exists." )
             elseif smartPreviewQual then
-                local missingPolicy = fprops:getPropertyForPlugin( _PLUGIN, 'missingOriginals' ) or (LrPrefs and LrPrefs.prefsForPlugin().missingOriginals) or 'Prompt'
+                -- Determine policy (per-run fprops first, then plugin prefs). Default = 'Prompt'
+                local missingPolicy = fprops:getPropertyForPlugin( _PLUGIN, 'missingOriginals' )
+                                        or (LrPrefs and LrPrefs.prefsForPlugin().missingOriginals)
+                                        or 'Prompt'
+                local collName  = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
+                local folderPath = LrPathUtils.parent( photoPath )
+
+                -- Preflight: always log the item that WOULD prompt
+                app:logW( "WILL_PROMPT_SMART_PREVIEW: ^1 | folder=^2 | collection=^3", photoPath, folderPath or 'N/A', collName )
+
                 if missingPolicy == 'All' then
-                    local collName = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
-                    local folderPath = LrPathUtils.parent( photoPath )
-                    app:logW("SKIP_SMART_PREVIEW: ^1 | folder=^2 | collection=^3", photoPath, folderPath or 'N/A', collName)
+                    -- Skip even with Smart Preview
+                    app:logW( "SKIP_SMART_PREVIEW: ^1 | folder=^2 | collection=^3", photoPath, folderPath or 'N/A', collName )
                     self.exportSession:removePhoto( _photo )
                     removed = true
                 else
-                    app:logV("Source file is missing, but smart preview is present — exporting using Smart Preview.")
+                    app:logV( "Source file is missing, but smart preview is present — exporting using Smart Preview." )
                 end
-else
+            
+            else
                 do
-                local collName = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
+                local collName  = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
                 local folderPath = LrPathUtils.parent( photoPath )
-                app:logW("SKIP_MISSING_ORIGINAL: ^1 | folder=^2 | collection=^3", photoPath, folderPath or 'N/A', collName)
+                app:logW( "SKIP_MISSING_ORIGINAL: ^1 | folder=^2 | collection=^3", photoPath, folderPath or 'N/A', collName )
             end
-                self.exportSession:removePhoto( _photo )
-                removed = true
+            self.exportSession:removePhoto( _photo )
+            removed = true
             end
             if not removed then
                 local sourceFilePath = photoPath
@@ -3000,6 +3010,9 @@ else
                 	        pubIds[destFilePath] = photoPath
                 	        cnt = cnt + 1
                 	        app:logV( "Approved for export #^1, source: ^2, destination: ^3", cnt, photoPath, destFilePath )
+                            self._approvedButNotRendered = self._approvedButNotRendered or {}
+                            local collNameX = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
+                            self._approvedButNotRendered[_photo] = { path = photoPath, collection = collNameX }
                 	    end
                 	-- else nada
                 	end
@@ -3363,7 +3376,29 @@ end
 --]]
 function TreeSyncPublish:processRenderingFailure( rendition, message )
     if not message then error( "no message", 4 ) end
+    -- Augmented logging so aborted collections enumerate skipped photos
+    local photo = rendition and rendition.photo
+    local collName = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
+    local srcPath = (photo and photo:getRawMetadata('path')) or 'N/A'
+    local msg = tostring(message or "")
+    app:logW("RENDER_FAILED: ^1 | collection=^2 | msg=^3", srcPath, collName, msg)
+    local m = msg:lower()
+    if m:find("smart preview") or m:find("preview") or m:find("original") then
+        app:logW("USER_DECLINED_SMART_PREVIEW: ^1 | collection=^2", srcPath, collName)
+        -- Log every remaining photo in the collection as aborted-after-prompt
+        if self.photosToExport and self._scanIdxByPhoto and photo then
+            local idx = self._scanIdxByPhoto[photo]
+            if type(idx) == 'number' then
+                for j = idx + 1, #self.photosToExport do
+                    local p = self.photosToExport[j]
+                    local ppath = (self.rawMeta and self.rawMeta[p] and self.rawMeta[p].path) or (p and p:getRawMetadata('path')) or 'N/A'
+                    app:logW("ABORTED_AFTER_PROMPT_SKIP: ^1 | collection=^2", ppath, collName)
+                end
+            end
+        end
+    end
     FtpPublish.processRenderingFailure( self, rendition, message )
+
 end
 
 
@@ -3474,6 +3509,16 @@ function TreeSyncPublish:finale( service, status, message )
     if self.exportParams.remPub then
         FtpPublish.finale( self, service, status, message ) -- this is all about ftp (i.e. end-of-job), so don't do it if not ftp'ing (rem-pub).
     end
+    -- Log any photos that were approved but never rendered (likely due to abort)
+    if self._approvedButNotRendered then
+        for _p, t in pairs(self._approvedButNotRendered) do
+            if t and t.path then
+                app:logW("NOT_PUBLISHED_DUE_TO_ABORT: ^1 | collection=^2", t.path, t.collection or 'N/A')
+            end
+        end
+        self._approvedButNotRendered = nil
+    end
+
 end
 
 
