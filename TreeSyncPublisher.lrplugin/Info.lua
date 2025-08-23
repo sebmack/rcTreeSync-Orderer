@@ -28,23 +28,21 @@ return {
     LrExportMenuItems = {
         {
             title = "Photo Sort Match All",
-            file = "ExtraSyncPhotoSortMatchAll.lua",  -- Pointing to the Lua file containing the function
+            file = "ExtraSyncPhotoSortMatchAll.lua",
         },
         {
             title = "Photo Sort Match This Tree",
-            file = "ExtraSyncPhotoSortMatchThisTree.lua",  -- Pointing to the Lua file containing the function
+            file = "ExtraSyncPhotoSortMatchThisTree.lua",
         },
-    
-,
-{
-    title = "Publish Only — This Tree",
-    file = "ExtraPublishOnlyThisTree.lua",
-},
-{
-    title = "Publish Only — All (TreeSync)",
-    file = "ExtraPublishOnlyAll.lua",
-}
-},
+        {
+            title = "Publish Only — This Tree",
+            file = "ExtraPublishOnlyThisTree.lua",
+        },
+        {
+            title = "Publish Only — All (TreeSync)",
+            file = "ExtraPublishOnlyAll.lua",
+        },
+    },
     MyMetadataDefinitionFile = "MyMetadataDefinitionFile.lua",
     LrMetadataTagsetFactory = "Tagsets.lua",
     -- LrMetadataProvider = {
