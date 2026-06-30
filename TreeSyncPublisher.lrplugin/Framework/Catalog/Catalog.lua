@@ -3719,7 +3719,11 @@ function Catalog:deletePhotos( params )
                 break
             elseif button == logsButton then
                 app:showLogFile()
-                apk = nil -- clear actionPrefKey so prompt always reappears after viewing log
+                -- Clear both the local key and the stored LR preference so "do not show again" cannot loop on log view
+                if apk then
+                    app:setGlobalPref( "actionPrefKey_enabled_" .. apk, false )
+                end
+                apk = nil
                 if MAC_ENV then
                     if final then
                         call:cancel()
