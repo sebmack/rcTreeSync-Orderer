@@ -3681,7 +3681,7 @@ function Catalog:deletePhotos( params )
             tb2 = ", and you should be viewing thumbnail grid in Library module"
         --end
         if WIN_ENV then
-            buttons = { dia:btn( "Show Log File", 'other' ), dia:btn( "Dismiss Temporarily", 'dismissTemporarily' ), dia:btn( "Yes - Splat-Delete Selected Photos", 'ok' ) }
+            buttons = { dia:btn( "Show Log File", 'other', false ), dia:btn( "Dismiss Temporarily", 'dismissTemporarily' ), dia:btn( "Yes - Splat-Delete Selected Photos", 'ok' ) }
             prompt = promptTidbit .. " ripe for deletion are now selected (^1^2)^3.\n \nIf all seems right, then click 'Yes - Splat-Delete Selected Photos' to splat delete them, or click 'Show Log File' to have a look at the list of paths in the log file, or click 'Cancel' to quit - you can delete manually if you prefer.\n \n*** Splat delete will only work if there are no other dialog boxes demanding attention - if there are, click 'Dismiss Temporarily' and close the other dialog boxes."
             okButton = 'ok'
             logsButton = 'other'
@@ -3694,7 +3694,7 @@ function Catalog:deletePhotos( params )
             apk = promptTidbit .. " deletion confirmation" -- ###1 seems a bit wonked - consider usage..
         else
             mDelButton = 'ok'
-            buttons = { dia:btn( "Show Log File", 'other' ), dia:btn( "Let Me Delete Manually", 'ok', false ) }
+            buttons = { dia:btn( "Show Log File", 'other', false ), dia:btn( "Let Me Delete Manually", 'ok', false ) }
             prompt = promptTidbit .. " ripe for deletion are now selected (^1^2)^3.\n \nClick 'Show Log File' to have a look at the list of paths in the log file, or click 'Cancel' to quit without showing log file.\n \nUntil splat-delete is tested on Mac, you'll have to delete manually - click 'Let Me Delete Manually' to give yourself a few seconds to do so."
             okButton = "notOk"
             logsButton = 'other'
@@ -3719,11 +3719,12 @@ function Catalog:deletePhotos( params )
                 break
             elseif button == logsButton then
                 app:showLogFile()
-                -- Clear both the local key and the stored LR preference so "do not show again" cannot loop on log view
+                -- Clear stored "do not show again" preference so dialog reappears
                 if apk then
-                    app:setGlobalPref( "actionPrefKey_enabled_" .. apk, false )
+                    local cleanKey = str:makeLuaVariableNameCompliant( apk )
+                    app:setGlobalPref( "actionPrefKey_enabled_" .. cleanKey, false )
+                    apk = nil
                 end
-                apk = nil
                 if MAC_ENV then
                     if final then
                         call:cancel()
