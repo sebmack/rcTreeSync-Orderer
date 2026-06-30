@@ -3685,21 +3685,20 @@ function Catalog:deletePhotos( params )
             prompt = promptTidbit .. " ripe for deletion are now selected (^1^2)^3.\n \nIf all seems right, then click 'Yes - Splat-Delete Selected Photos' to splat delete them, or click 'Show Log File' to have a look at the list of paths in the log file, or click 'Cancel' to quit - you can delete manually if you prefer.\n \n*** Splat delete will only work if there are no other dialog boxes demanding attention - if there are, click 'Dismiss Temporarily' and close the other dialog boxes."
             okButton = 'ok'
             logsButton = 'other'
-            apk = actionPrefKey
+            apk = nil -- never allow "do not show again" on deletion confirmation
         elseif final then
             buttons = { dia:btn( "Show Log File", 'ok' ), dia:btn( "Skip Log File", 'cancel' ) }
             prompt = promptTidbit .. " ripe for deletion are now selected (^1^2)^3.\n \nClick 'Show Log File' to have a look at the list of paths in the log file, or click 'Cancel' to quit without showing log file.\n \nUntil splat-delete is tested on Mac, you'll have to delete manually after this dialog box is dismissed."
             okButton = "notOk"
             logsButton = 'ok'
-            apk = promptTidbit .. " deletion confirmation" -- ###1 seems a bit wonked - consider usage..
+            apk = nil -- never allow "do not show again" on deletion confirmation
         else
             mDelButton = 'ok'
             buttons = { dia:btn( "Show Log File", 'other', false ), dia:btn( "Let Me Delete Manually", 'ok', false ) }
             prompt = promptTidbit .. " ripe for deletion are now selected (^1^2)^3.\n \nClick 'Show Log File' to have a look at the list of paths in the log file, or click 'Cancel' to quit without showing log file.\n \nUntil splat-delete is tested on Mac, you'll have to delete manually - click 'Let Me Delete Manually' to give yourself a few seconds to do so."
             okButton = "notOk"
             logsButton = 'other'
-            -- apk = promptTidbit .. " pre-op deletion confirmation"
-            apk = actionPrefKey
+            apk = nil -- never allow "do not show again" on deletion confirmation
         end
         local first = true
         repeat
