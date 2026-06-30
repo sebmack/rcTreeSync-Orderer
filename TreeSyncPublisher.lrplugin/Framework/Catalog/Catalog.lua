@@ -3685,20 +3685,34 @@ function Catalog:deletePhotos( params )
             prompt = promptTidbit .. " ripe for deletion are now selected (^1^2)^3.\n \nIf all seems right, then click 'Yes - Splat-Delete Selected Photos' to splat delete them, or click 'Show Log File' to have a look at the list of paths in the log file, or click 'Cancel' to quit - you can delete manually if you prefer.\n \n*** Splat delete will only work if there are no other dialog boxes demanding attention - if there are, click 'Dismiss Temporarily' and close the other dialog boxes."
             okButton = 'ok'
             logsButton = 'other'
-            apk = nil -- never allow "do not show again" on deletion confirmation
+            apk = actionPrefKey
         elseif final then
             buttons = { dia:btn( "Show Log File", 'ok' ), dia:btn( "Skip Log File", 'cancel' ) }
             prompt = promptTidbit .. " ripe for deletion are now selected (^1^2)^3.\n \nClick 'Show Log File' to have a look at the list of paths in the log file, or click 'Cancel' to quit without showing log file.\n \nUntil splat-delete is tested on Mac, you'll have to delete manually after this dialog box is dismissed."
             okButton = "notOk"
             logsButton = 'ok'
-            apk = nil -- never allow "do not show again" on deletion confirmation
+            apk = actionPrefKey
         else
             mDelButton = 'ok'
             buttons = { dia:btn( "Show Log File", 'other', false ), dia:btn( "Let Me Delete Manually", 'ok', false ) }
             prompt = promptTidbit .. " ripe for deletion are now selected (^1^2)^3.\n \nClick 'Show Log File' to have a look at the list of paths in the log file, or click 'Cancel' to quit without showing log file.\n \nUntil splat-delete is tested on Mac, you'll have to delete manually - click 'Let Me Delete Manually' to give yourself a few seconds to do so."
             okButton = "notOk"
             logsButton = 'other'
-            apk = nil -- never allow "do not show again" on deletion confirmation
+            apk = actionPrefKey
+        end
+        -- If a previous "do not show again" saved the log button answer, clear it now
+        -- so the dialog actually shows. Delete/Cancel answers are kept.
+        if str:is( apk ) then
+            local cleanKey = str:makeLuaVariableNameCompliant( apk )
+            local enaKey = "actionPrefKey_enabled_" .. cleanKey
+            local ansKey = "actionPrefKey_answer_" .. cleanKey
+            if app:getGlobalPref( enaKey ) then
+                local savedAnswer = app:getGlobalPref( ansKey )
+                if savedAnswer == logsButton then
+                    app:setGlobalPref( enaKey, false )
+                    app:setGlobalPref( ansKey, "" )
+                end
+            end
         end
         local first = true
         repeat
@@ -3718,12 +3732,6 @@ function Catalog:deletePhotos( params )
                 break
             elseif button == logsButton then
                 app:showLogFile()
-                -- Clear stored "do not show again" preference so dialog reappears
-                if apk then
-                    local cleanKey = str:makeLuaVariableNameCompliant( apk )
-                    app:setGlobalPref( "actionPrefKey_enabled_" .. cleanKey, false )
-                    apk = nil
-                end
                 if MAC_ENV then
                     if final then
                         call:cancel()
