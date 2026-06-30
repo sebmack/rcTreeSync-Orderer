@@ -3719,6 +3719,7 @@ function Catalog:deletePhotos( params )
                 break
             elseif button == logsButton then
                 app:showLogFile()
+                apk = nil -- clear actionPrefKey so prompt always reappears after viewing log
                 if MAC_ENV then
                     if final then
                         call:cancel()
