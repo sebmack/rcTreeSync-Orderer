@@ -3700,20 +3700,6 @@ function Catalog:deletePhotos( params )
             logsButton = 'other'
             apk = actionPrefKey
         end
-        -- If a previous "do not show again" saved the log button answer, clear it now
-        -- so the dialog actually shows. Delete/Cancel answers are kept.
-        if str:is( apk ) then
-            local cleanKey = str:makeLuaVariableNameCompliant( apk )
-            local enaKey = "actionPrefKey_enabled_" .. cleanKey
-            local ansKey = "actionPrefKey_answer_" .. cleanKey
-            if app:getGlobalPref( enaKey ) then
-                local savedAnswer = app:getGlobalPref( ansKey )
-                if savedAnswer == logsButton then
-                    app:setGlobalPref( enaKey, false )
-                    app:setGlobalPref( ansKey, "" )
-                end
-            end
-        end
         local first = true
         repeat
             local vi = {}

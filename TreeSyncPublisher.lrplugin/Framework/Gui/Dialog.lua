@@ -1230,7 +1230,27 @@ function Dialog:messageWithOptions( message, ... )
                 if not str:is( answer ) then
                     app:logError( "no answer" )
                 else
-                    return answer
+                    -- Check if saved answer is for a non-memorable button.
+                    -- If so, clear the pref and show the dialog instead of returning a stale answer.
+                    local answerIsMemorableButton = true -- assume memorable unless we find it in buttons
+                    if buttons then
+                        for _, button in ipairs( buttons ) do
+                            if type( button ) == 'table' and button.verb == answer then
+                                if button.memorable == false or button.forgetable then
+                                    answerIsMemorableButton = false
+                                end
+                                break
+                            end
+                        end
+                    end
+                    if answerIsMemorableButton then
+                        return answer
+                    else
+                        -- Saved answer was for a non-memorable button - clear and show dialog
+                        app:setGlobalPref( apkPrefEna, false )
+                        app:setGlobalPref( apkPrefAnswer, "" )
+                        app:setGlobalPref( apkPrefFriendly, "" )
+                    end
                 end
             end
         end
