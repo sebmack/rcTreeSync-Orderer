@@ -207,7 +207,7 @@ function Background:displayError( errm, id, immediate, promptWhenUserCancels )
         -- this added 2/Jun/2014 0:56:
         if not shutdown and promptWhenUserCancels and call.errScope and call.errScope:isCanceled() then
             local button = app:show{ confirm="View log file now?",
-                buttons = { { label="Yes", verb='ok', memorable=false }, { label="No", verb='cancel' } },
+                buttons = { { label="Yes", verb='ok', memorable=false }, { label="No", verb='cancel', memorable=true } },
                 actionPrefKey = "Background error acknowledgment - view log file",
             }
             if button == 'ok' then

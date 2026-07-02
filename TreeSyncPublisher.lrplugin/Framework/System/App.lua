@@ -1632,7 +1632,7 @@ function App:alertLogWE( opts, fmt, ... )
             self.alertErrors = 0
             if not shutdown then
                 local button = app:show{ confirm="View log file now?",
-                    buttons = { { label="Yes", verb='ok', memorable=false }, { label="No", verb='cancel' } },
+                    buttons = { { label="Yes", verb='ok', memorable=false }, { label="No", verb='cancel', memorable=true } },
                     actionPrefKey = "Alert ack - view log file",
                 }
                 if button == 'ok' then
