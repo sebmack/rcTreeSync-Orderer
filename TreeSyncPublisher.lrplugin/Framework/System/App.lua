@@ -1632,11 +1632,15 @@ function App:alertLogWE( opts, fmt, ... )
             self.alertErrors = 0
             if not shutdown then
                 local button = app:show{ confirm="View log file now?",
-                    buttons = { { label="Yes", verb='ok', memorable=false }, { label="No", verb='cancel', memorable=true } },
+                    buttons = dia:btns( "YesNo" ),
                     actionPrefKey = "Alert ack - view log file",
                 }
                 if button == 'ok' then
                     app:showLogFile()
+                    -- Clear "don't show again" so this prompt always reappears after viewing log
+                    local cleanKey = str:makeLuaVariableNameCompliant( "Alert ack - view log file" )
+                    app:setGlobalPref( "actionPrefKey_enabled_" .. cleanKey, false )
+                    app:setGlobalPref( "actionPrefKey_answer_" .. cleanKey, "" )
                 else
                     app:logV( "User opted not to view log file upon alert acknowledgment." )
                 end
