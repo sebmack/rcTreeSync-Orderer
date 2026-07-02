@@ -1234,19 +1234,24 @@ function Dialog:messageWithOptions( message, ... )
                     -- If so, clear the pref and show the dialog instead of returning a stale answer.
                     local answerIsMemorableButton = true -- assume memorable unless we find it in buttons
                     if buttons then
-                        for _, button in ipairs( buttons ) do
-                            if type( button ) == 'table' and button.verb == answer then
-                                if button.memorable == false or button.forgetable then
-                                    answerIsMemorableButton = false
+                        for i, button in ipairs( buttons ) do
+                            if type( button ) == 'table' then
+                                app:logV( "Dialog stored-answer check: button[" .. i .. "] verb='" .. tostring(button.verb) .. "' memorable=" .. tostring(button.memorable) .. " vs saved='" .. tostring(answer) .. "'" )
+                                if button.verb == answer then
+                                    if button.memorable == false or button.forgetable then
+                                        answerIsMemorableButton = false
+                                    end
+                                    break
                                 end
-                                break
                             end
                         end
                     end
+                    app:logV( "Dialog stored-answer verdict: answer='" .. tostring(answer) .. "' isMemorableButton=" .. tostring(answerIsMemorableButton) )
                     if answerIsMemorableButton then
                         return answer
                     else
                         -- Saved answer was for a non-memorable button - clear and show dialog
+                        app:logV( "Clearing non-memorable stored answer" )
                         app:setGlobalPref( apkPrefEna, false )
                         app:setGlobalPref( apkPrefAnswer, "" )
                         app:setGlobalPref( apkPrefFriendly, "" )
