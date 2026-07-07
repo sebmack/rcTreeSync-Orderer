@@ -2487,8 +2487,6 @@ end
         the rendering process (preserving nothing from the base export class).
 --]]        
 function TreeSyncPublish:processRenderedPhotosMethod()
-    if self._approvedButNotRendered then self._approvedButNotRendered[rendition.photo] = nil end
-
     assert( self.exportParams ~= nil, "no export params" )
     local exportSettings = self.exportParams -- convenience var.
     assert( self.exportParams.uploadImmed ~= nil, "no sync param" )
@@ -3012,7 +3010,7 @@ local removed = false
                 	        app:logV( "Approved for export #^1, source: ^2, destination: ^3", cnt, photoPath, destFilePath )
                             self._approvedButNotRendered = self._approvedButNotRendered or {}
                             local collNameX = (self.exportContext and self.exportContext.publishedCollection and self.exportContext.publishedCollection:getName()) or 'N/A'
-                            self._approvedButNotRendered[_photo] = { path = photoPath, collection = collNameX }
+                            self._approvedButNotRendered[photoPath] = { path = photoPath, collection = collNameX }
                 	    end
                 	-- else nada
                 	end
@@ -3331,8 +3329,10 @@ function TreeSyncPublish:processRenderedPhoto( rendition, renderedFilePath )
 
 	if exported then
 
+        if self._approvedButNotRendered then self._approvedButNotRendered[sourceFilePath] = nil end
+
         if self.exportContext.publishService then
-            
+
             app:log( "Published ^1", sourceFilePath )
             local id = rendition.publishedPhotoId
             if id ~=nil and id ~= photoId then
@@ -4223,7 +4223,7 @@ function TreeSyncPublish.deletePhotosFromPublishedCollection( publishSettings, a
             repeat
                 local answer = app:show{ info="Delete ^1? List of files to delete are in log file.",
                     subs = { str:plural( #arrayOfPhotoIds, "target photo", true ) },
-                    buttons = { dia:btn( "Yes - Delete Target Photos", 'ok' ), dia:btn( "View Log File", 'view_logs') }, -- , dia:btn( "No - Just Pretend...", 'other' ) }, -- and cancel.
+                    buttons = { dia:btn( "Yes - Delete Target Photos", 'ok' ), dia:btn( "View Log File", 'view_logs', false) }, -- , dia:btn( "No - Just Pretend...", 'other' ) }, -- and cancel.
                     actionPrefKey = "Delete photos confirmation",
                 }
                 if answer == 'ok' then
